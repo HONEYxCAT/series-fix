@@ -352,18 +352,7 @@
 		observer.observe(document.body, { childList: true, subtree: true });
 		var existingCards = document.querySelectorAll(".card");
 		existingCards.forEach(processNode);
-		var focusObserver = new MutationObserver(function (mutations) {
-			mutations.forEach(function (mutation) {
-				if (mutation.type === "attributes" && mutation.attributeName === "class") {
-					var node = mutation.target;
-					if (node.classList.contains("card") && node.classList.contains("focus")) {
-						var data = node.data || (window.jQuery && window.jQuery(node).data("data")) || node.card_data;
-						if (data) renderCard(node, data);
-					}
-				}
-			});
-		});
-		focusObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ["class"] });
+
 		Lampa.Listener.follow("activity", function (e) {
 			if (e.type === "archive" || e.type === "resume") {
 				setTimeout(function () {
