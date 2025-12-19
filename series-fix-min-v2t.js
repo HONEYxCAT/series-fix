@@ -183,11 +183,18 @@
 	function drawHTML(cardNode, items, isMovieMode) {
 		var viewContainer = cardNode.querySelector(".card__view");
 		if (!viewContainer) return;
-		var old = cardNode.querySelector(".ep-watched-layer");
-		if (old) old.remove();
 		if (!items || !items.length) return;
-		var layer = document.createElement("div");
-		layer.className = "ep-watched-layer";
+		var existingLayer = cardNode.querySelector(".ep-watched-layer");
+		var layer;
+		if (existingLayer) {
+			var existingBody = existingLayer.querySelector(".ep-watched-body");
+			if (existingBody) existingBody.remove();
+			layer = existingLayer;
+		} else {
+			layer = document.createElement("div");
+			layer.className = "ep-watched-layer";
+			viewContainer.appendChild(layer);
+		}
 		if (isMovieMode) {
 			layer.classList.add("layer--movie");
 		}
@@ -213,11 +220,13 @@
 			body.appendChild(item);
 		});
 		layer.appendChild(body);
-		viewContainer.appendChild(layer);
 	}
 	function processSeries(cardNode, cardData) {
 		var progress = getSeriesProgress(cardData);
 		if (!progress) return;
+		if (window.SEASON_FIX && cardData.id) {
+			window.SEASON_FIX.current_tv_id = cardData.id;
+		}
 		loadEpisodes(cardData, progress.season, function (episodes) {
 			if (!episodes.length) return;
 			var titleKey = progress.title || cardData.original_title || cardData.original_name || cardData.name;
