@@ -222,12 +222,19 @@
 		layer.appendChild(body);
 	}
 	function processSeries(cardNode, cardData) {
+		var cardName = cardData.name || cardData.original_name || cardData.title || "?";
+		Lampa.Noty.show("processSeries: " + cardName);
 		var progress = getSeriesProgress(cardData);
-		if (!progress) return;
+		if (!progress) {
+			Lampa.Noty.show("NO progress for: " + cardName);
+			return;
+		}
+		Lampa.Noty.show("progress found: S" + progress.season + "E" + progress.episode);
 		if (window.SEASON_FIX && cardData.id) {
 			window.SEASON_FIX.current_tv_id = cardData.id;
 		}
 		loadEpisodes(cardData, progress.season, function (episodes) {
+			Lampa.Noty.show("episodes loaded: " + episodes.length);
 			if (!episodes.length) return;
 			var titleKey = progress.title || cardData.original_title || cardData.original_name || cardData.name;
 			var lastWatchedIndex = -1;
