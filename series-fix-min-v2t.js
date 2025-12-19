@@ -232,9 +232,19 @@
 		Lampa.Noty.show("progress found: S" + progress.season + "E" + progress.episode);
 		if (window.SEASON_FIX && cardData.id) {
 			window.SEASON_FIX.current_tv_id = cardData.id;
+			var tvmazeCache = window.SEASON_FIX.tvmaze_cache[cardData.id];
+			if (tvmazeCache && typeof tvmazeCache === "object") {
+				var seasons = Object.keys(tvmazeCache).map(function (s) {
+					return "S" + s + ":" + tvmazeCache[s];
+				});
+				Lampa.Noty.show("TVmaze: " + seasons.join(", "));
+			} else {
+				Lampa.Noty.show("TVmaze cache: " + (tvmazeCache || "none"));
+			}
 		}
+		Lampa.Noty.show("Loading season: " + progress.season);
 		loadEpisodes(cardData, progress.season, function (episodes) {
-			Lampa.Noty.show("episodes loaded: " + episodes.length);
+			Lampa.Noty.show("episodes loaded: " + episodes.length + " for S" + progress.season);
 			if (!episodes.length) return;
 			var titleKey = progress.title || cardData.original_title || cardData.original_name || cardData.name;
 			var lastWatchedIndex = -1;
