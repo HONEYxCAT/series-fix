@@ -1,6 +1,5 @@
 (function () {
 	"use strict";
-
 	function injectStyles() {
 		if (document.getElementById("ep-design-css")) return;
 		var css = `
@@ -76,7 +75,6 @@
 		style.innerHTML = css;
 		document.head.appendChild(style);
 	}
-
 	function getDaysFromNow(dateStr) {
 		if (!dateStr) return -1;
 		var date = new Date(dateStr);
@@ -86,7 +84,6 @@
 		var diff = date - now;
 		return Math.ceil(diff / (1000 * 60 * 60 * 24));
 	}
-
 	function generateVariations(title) {
 		if (!title) return [];
 		var variations = [title];
@@ -115,12 +112,6 @@
 		});
 		return variations.concat(extraVariations);
 	}
-
-	// Helper to safely get data from a node, handling jQuery or direct property
-	function getCardData(node) {
-		return node.data || (window.jQuery && window.jQuery(node).data("data")) || node.card_data;
-	}
-
 	function getSeriesProgress(card) {
 		var Utils = Lampa.Utils;
 		var Storage = Lampa.Storage;
@@ -172,7 +163,6 @@
 		}
 		return null;
 	}
-
 	function loadEpisodes(card, season, callback) {
 		if (!Lampa.Api || !Lampa.Api.seasons) return callback([]);
 		Lampa.Api.seasons(
@@ -190,7 +180,6 @@
 			},
 		);
 	}
-
 	function drawHTML(cardNode, items, isMovieMode) {
 		var viewContainer = cardNode.querySelector(".card__view");
 		if (!viewContainer) return;
@@ -226,19 +215,12 @@
 		layer.appendChild(body);
 		viewContainer.appendChild(layer);
 	}
-
 	function processSeries(cardNode, cardData) {
+		if (window.SEASON_FIX) window.SEASON_FIX.current_tv_id = cardData.id;
 		var progress = getSeriesProgress(cardData);
 		if (!progress) return;
 		loadEpisodes(cardData, progress.season, function (episodes) {
 			if (!episodes.length) return;
-
-			// FIX: Check if the node still corresponds to the cardData we requested.
-			// If the node was recycled (used for another card) while we were loading,
-			// the current data on the node will be different.
-			var currentData = getCardData(cardNode);
-			if (!currentData || currentData.id !== cardData.id) return;
-
 			var titleKey = progress.title || cardData.original_title || cardData.original_name || cardData.name;
 			var lastWatchedIndex = -1;
 			episodes.forEach(function (ep, index) {
@@ -307,7 +289,6 @@
 			drawHTML(cardNode, itemsToDraw, false);
 		});
 	}
-
 	function processMovie(cardNode, cardData) {
 		var Utils = Lampa.Utils;
 		var Timeline = Lampa.Timeline;
@@ -333,7 +314,6 @@
 		];
 		drawHTML(cardNode, itemsToDraw, true);
 	}
-
 	function renderCard(cardNode, cardData) {
 		var isSeries = (typeof cardData.number_of_seasons !== "undefined" && cardData.number_of_seasons > 0) || cardData.original_name;
 		if (isSeries) {
@@ -342,27 +322,17 @@
 			processMovie(cardNode, cardData);
 		}
 	}
-
 	function startPlugin() {
 		injectStyles();
 		var processNode = function (node) {
 			if (node.classList && node.classList.contains("card--wide")) return;
 			if (node.dataset.epDesignProcessed) return;
-
-			// FIX: Get fresh data.
-			var data = getCardData(node);
+			var data = node.data || (window.jQuery && window.jQuery(node).data("data")) || node.card_data;
 			if (data) {
 				node.dataset.epDesignProcessed = "true";
 				renderCard(node, data);
-
-				// FIX: Use a dynamic listener that fetches the CURRENT data from the node.
-				// This solves the issue where recycled DOM nodes (common in TV apps)
-				// would use the OLD data from the closure.
 				node.addEventListener("mouseenter", function () {
-					var freshData = getCardData(node);
-					if (freshData) {
-						renderCard(node, freshData);
-					}
+					renderCard(node, data);
 				});
 			}
 		};
@@ -384,7 +354,6 @@
 		var existingCards = document.querySelectorAll(".card");
 		existingCards.forEach(processNode);
 	}
-
 	if (window.appready) {
 		startPlugin();
 	} else {
