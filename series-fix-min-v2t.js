@@ -151,7 +151,7 @@
 				season: found.season,
 				episode: found.episode,
 				title: foundKey || baseKeys[0],
-				fromHistory: true
+				fromHistory: true,
 			};
 		}
 		if (baseKeys[0]) {
@@ -217,13 +217,13 @@
 	}
 	function processSeries(cardNode, cardData) {
 		var progress = getSeriesProgress(cardData);
-		if (!progress) return; 
+		if (!progress) return;
 		loadEpisodes(cardData, progress.season, function (episodes) {
 			if (!episodes.length) return;
 			var titleKey = progress.title || cardData.original_title || cardData.original_name || cardData.name;
 			var lastWatchedIndex = -1;
-			episodes.forEach(function(ep, index) {
-				var hashStr = [ep.season_number, ep.season_number > 10 ? ':' : '', ep.episode_number, titleKey].join('');
+			episodes.forEach(function (ep, index) {
+				var hashStr = [ep.season_number, ep.season_number > 10 ? ":" : "", ep.episode_number, titleKey].join("");
 				var view = Lampa.Timeline.view(Lampa.Utils.hash(hashStr));
 				if (view && view.percent > 0) {
 					lastWatchedIndex = index;
@@ -252,7 +252,7 @@
 				listToShow = episodes.slice(currentIndex, currentIndex + 5);
 			}
 			var itemsToDraw = listToShow.map(function (ep, i) {
-				var isFirstInList = (i === 0);
+				var isFirstInList = i === 0;
 				var percent = 0;
 				var days = getDaysFromNow(ep.air_date);
 				var isFuture = days > 0;
@@ -274,7 +274,7 @@
 				}
 				var titleHtml = '<span class="ep-num">' + ep.episode_number + " -</span> " + epName;
 				if (!isFuture) {
-					var hashStr = [ep.season_number, ep.season_number > 10 ? ':' : '', ep.episode_number, titleKey].join("");
+					var hashStr = [ep.season_number, ep.season_number > 10 ? ":" : "", ep.episode_number, titleKey].join("");
 					var viewData = Lampa.Timeline.view(Lampa.Utils.hash(hashStr));
 					if (viewData) percent = viewData.percent;
 				}
@@ -352,6 +352,29 @@
 		observer.observe(document.body, { childList: true, subtree: true });
 		var existingCards = document.querySelectorAll(".card");
 		existingCards.forEach(processNode);
+		var focusObserver = new MutationObserver(function (mutations) {
+			mutations.forEach(function (mutation) {
+				if (mutation.type === "attributes" && mutation.attributeName === "class") {
+					var node = mutation.target;
+					if (node.classList.contains("card") && node.classList.contains("focus")) {
+						var data = node.data || (window.jQuery && window.jQuery(node).data("data")) || node.card_data;
+						if (data) renderCard(node, data);
+					}
+				}
+			});
+		});
+		focusObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ["class"] });
+		Lampa.Listener.follow("activity", function (e) {
+			if (e.type === "archive" || e.type === "resume") {
+				setTimeout(function () {
+					var cards = document.querySelectorAll(".card[data-ep-design-processed]");
+					cards.forEach(function (node) {
+						var data = node.data || (window.jQuery && window.jQuery(node).data("data")) || node.card_data;
+						if (data) renderCard(node, data);
+					});
+				}, 100);
+			}
+		});
 	}
 	if (window.appready) {
 		startPlugin();
