@@ -163,17 +163,69 @@
 		}
 		return null;
 	}
-	function loadEpisodes(card, season, callback) {
-		if (!Lampa.Api || !Lampa.Api.seasons) return callback([]);
-		Lampa.Api.seasons(
-			card,
-			[season],
+	function applyTvmazeSplit(allEpisodes, tvmazeMap) {
+		if (!tvmazeMap || typeof tvmazeMap !== "object" || Object.keys(tvmazeMap).length === 0) {
+			return null;
+		}
+		var sorted = allEpisodes.slice().sort(function (a, b) {
+			return (a.episode_number || 0) - (b.episode_number || 0);
+		});
+		var seasons = {};
+		var currentSeason = 1;
+		var episodeCounter = 0;
+		var seasonLimit = tvmazeMap[currentSeason] || 9999;
+		for (var i = 0; i < sorted.length; i++) {
+			var ep = sorted[i];
+			episodeCounter++;
+			if (episodeCounter > seasonLimit) {
+				currentSeason++;
+				episodeCounter = 1;
+				seasonLimit = tvmazeMap[currentSeason] || 9999;
+			}
+			if (!seasons[currentSeason]) {
+				seasons[currentSeason] = [];
+			}
+			var newEp = {};
+			for (var k in ep) {
+				if (ep.hasOwnProperty(k)) newEp[k] = ep[k];
+			}
+			newEp.season_number = currentSeason;
+			newEp.episode_number = episodeCounter;
+			seasons[currentSeason].push(newEp);
+		}
+		return seasons;
+	}
+	function loadEpisodesDirectly(card, targetSeason, callback) {
+		var cardId = card.id;
+		if (!cardId || !Lampa.TMDB) return callback([]);
+		var apiUrl = Lampa.TMDB.api("tv/" + cardId + "/season/1?api_key=" + Lampa.TMDB.key());
+		var network = new Lampa.Reguest();
+		network.timeout(15000);
+		network.silent(
+			apiUrl,
 			function (data) {
-				if (data && data[season] && data[season].episodes) {
-					callback(data[season].episodes);
-				} else {
-					callback([]);
+				if (!data || !data.episodes || !data.episodes.length) {
+					return callback([]);
 				}
+				var allEpisodes = data.episodes;
+				var tvmazeMap = null;
+				if (window.SEASON_FIX && window.SEASON_FIX.tvmaze_cache) {
+					tvmazeMap = window.SEASON_FIX.tvmaze_cache[cardId];
+				}
+				if (tvmazeMap && typeof tvmazeMap === "object" && Object.keys(tvmazeMap).length > 0) {
+					var splitSeasons = applyTvmazeSplit(allEpisodes, tvmazeMap);
+					if (splitSeasons && splitSeasons[targetSeason]) {
+						return callback(splitSeasons[targetSeason]);
+					}
+				}
+				var result = allEpisodes.map(function (ep) {
+					ep.season_number = 1;
+					return ep;
+				});
+				if (targetSeason === 1) {
+					return callback(result);
+				}
+				return callback([]);
 			},
 			function () {
 				callback([]);
@@ -222,29 +274,9 @@
 		layer.appendChild(body);
 	}
 	function processSeries(cardNode, cardData) {
-		var cardName = cardData.name || cardData.original_name || cardData.title || "?";
-		Lampa.Noty.show("processSeries: " + cardName);
 		var progress = getSeriesProgress(cardData);
-		if (!progress) {
-			Lampa.Noty.show("NO progress for: " + cardName);
-			return;
-		}
-		Lampa.Noty.show("progress found: S" + progress.season + "E" + progress.episode);
-		if (window.SEASON_FIX && cardData.id) {
-			window.SEASON_FIX.current_tv_id = cardData.id;
-			var tvmazeCache = window.SEASON_FIX.tvmaze_cache[cardData.id];
-			if (tvmazeCache && typeof tvmazeCache === "object") {
-				var seasons = Object.keys(tvmazeCache).map(function (s) {
-					return "S" + s + ":" + tvmazeCache[s];
-				});
-				Lampa.Noty.show("TVmaze: " + seasons.join(", "));
-			} else {
-				Lampa.Noty.show("TVmaze cache: " + (tvmazeCache || "none"));
-			}
-		}
-		Lampa.Noty.show("Loading season: " + progress.season);
-		loadEpisodes(cardData, progress.season, function (episodes) {
-			Lampa.Noty.show("episodes loaded: " + episodes.length + " for S" + progress.season);
+		if (!progress) return;
+		loadEpisodesDirectly(cardData, progress.season, function (episodes) {
 			if (!episodes.length) return;
 			var titleKey = progress.title || cardData.original_title || cardData.original_name || cardData.name;
 			var lastWatchedIndex = -1;
@@ -378,7 +410,6 @@
 		observer.observe(document.body, { childList: true, subtree: true });
 		var existingCards = document.querySelectorAll(".card");
 		existingCards.forEach(processNode);
-
 		Lampa.Listener.follow("activity", function (e) {
 			if (e.type === "archive" || e.type === "resume") {
 				setTimeout(function () {
