@@ -183,16 +183,26 @@
 	function drawHTML(cardNode, items, isMovieMode) {
 		var viewContainer = cardNode.querySelector(".card__view");
 		if (!viewContainer) return;
-		var old = cardNode.querySelector(".ep-watched-layer");
-		if (old) old.remove();
-		if (!items || !items.length) return;
-		var layer = document.createElement("div");
-		layer.className = "ep-watched-layer";
-		if (isMovieMode) {
-			layer.classList.add("layer--movie");
+		var layer = cardNode.querySelector(".ep-watched-layer");
+		if (!items || !items.length) {
+			if (layer) layer.remove();
+			return;
 		}
-		var body = document.createElement("div");
-		body.className = "ep-watched-body";
+		if (!layer) {
+			layer = document.createElement("div");
+			layer.className = "ep-watched-layer";
+			viewContainer.appendChild(layer);
+		}
+		if (isMovieMode) layer.classList.add("layer--movie");
+		else layer.classList.remove("layer--movie");
+		var body = layer.querySelector(".ep-watched-body");
+		if (!body) {
+			body = document.createElement("div");
+			body.className = "ep-watched-body";
+			layer.appendChild(body);
+		} else {
+			body.innerHTML = "";
+		}
 		items.forEach(function (data) {
 			var item = document.createElement("div");
 			item.className = "ep-watched-item" + (data.isMovie ? " movie-variant" : "");
@@ -212,8 +222,6 @@
 			}
 			body.appendChild(item);
 		});
-		layer.appendChild(body);
-		viewContainer.appendChild(layer);
 	}
 	function processSeries(cardNode, cardData) {
 		var progress = getSeriesProgress(cardData);
