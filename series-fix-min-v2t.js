@@ -322,6 +322,17 @@
 		}
 	}
 	function startPlugin() {
+		window.addEventListener("tvmaze_loaded", function (e) {
+			if (e.detail && e.detail.id) {
+				var cards = document.querySelectorAll(".card");
+				cards.forEach(function (card) {
+					var data = card.data || (window.jQuery && window.jQuery(card).data("data")) || card.card_data;
+					if (data && data.id == e.detail.id) {
+						renderCard(card, data);
+					}
+				});
+			}
+		});
 		injectStyles();
 		var processNode = function (node) {
 			if (node.classList && node.classList.contains("card--wide")) return;
