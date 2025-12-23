@@ -216,7 +216,6 @@
 		viewContainer.appendChild(layer);
 	}
 	function processSeries(cardNode, cardData) {
-		if (window.SEASON_FIX) window.SEASON_FIX.current_tv_id = cardData.id;
 		var progress = getSeriesProgress(cardData);
 		if (!progress) return;
 		loadEpisodes(cardData, progress.season, function (episodes) {
@@ -331,26 +330,38 @@
 			if (data) {
 				node.dataset.epDesignProcessed = "true";
 				renderCard(node, data);
-				node.addEventListener("mouseenter", function () {
+			}
+		};
+		var handleFocus = function (node) {
+			if (node.classList && node.classList.contains("card--wide")) return;
+			if (node.classList.contains("focus")) {
+				var data = node.data || (window.jQuery && window.jQuery(node).data("data")) || node.card_data;
+				if (data) {
 					renderCard(node, data);
-				});
+				}
 			}
 		};
 		var observer = new MutationObserver(function (mutations) {
 			mutations.forEach(function (mutation) {
-				mutation.addedNodes.forEach(function (node) {
-					if (node.nodeType === 1) {
-						if (node.classList.contains("card")) {
-							processNode(node);
-						} else {
-							var cards = node.querySelectorAll(".card");
-							cards.forEach(processNode);
+				if (mutation.type === "childList") {
+					mutation.addedNodes.forEach(function (node) {
+						if (node.nodeType === 1) {
+							if (node.classList.contains("card")) {
+								processNode(node);
+							} else {
+								var cards = node.querySelectorAll(".card");
+								cards.forEach(processNode);
+							}
 						}
+					});
+				} else if (mutation.type === "attributes" && mutation.attributeName === "class") {
+					if (mutation.target.classList.contains("card")) {
+						handleFocus(mutation.target);
 					}
-				});
+				}
 			});
 		});
-		observer.observe(document.body, { childList: true, subtree: true });
+		observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
 		var existingCards = document.querySelectorAll(".card");
 		existingCards.forEach(processNode);
 	}
