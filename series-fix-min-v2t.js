@@ -364,6 +364,14 @@
 		observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
 		var existingCards = document.querySelectorAll(".card");
 		existingCards.forEach(processNode);
+		if (Lampa.Storage.listener) {
+			Lampa.Storage.listener.follow("change", function (e) {
+				if (e.name == "online_watched_last") {
+					var cards = document.querySelectorAll(".card");
+					cards.forEach(processNode);
+				}
+			});
+		}
 	}
 	if (window.appready) {
 		startPlugin();
