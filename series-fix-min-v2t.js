@@ -21,12 +21,12 @@
 				pointer-events: none;
 				overflow: hidden;
 				opacity: 0;
-				transition: opacity 0.2s ease;
+				transition: opacity 0.1s ease;
 			}
 			.card.focus .ep-watched-layer,
 			.card:hover .ep-watched-layer {
 				opacity: 1;
-				transition-delay: 0.5s;
+				transition-delay: 0.3s;
 			}
 			.ep-watched-body {
 				font-size: 0.9em;
@@ -334,6 +334,7 @@
 			if (e.detail && e.detail.id) {
 				var cards = document.querySelectorAll(".card");
 				cards.forEach(function (card) {
+					if (card.classList.contains("card--wide")) return;
 					var data = card.data || (window.jQuery && window.jQuery(card).data("data")) || card.card_data;
 					if (data && data.id == e.detail.id) {
 						renderCard(card, data);
@@ -359,6 +360,7 @@
 				if (mutation.type === "attributes" && mutation.attributeName === "class") {
 					var node = mutation.target;
 					if (node.classList.contains("card") && node.classList.contains("focus")) {
+						if (node.classList.contains("card--wide")) return;
 						var data = node.data || (window.jQuery && window.jQuery(node).data("data")) || node.card_data;
 						if (data) renderCard(node, data);
 					}
