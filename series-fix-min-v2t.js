@@ -21,12 +21,12 @@
 				pointer-events: none;
 				overflow: hidden;
 				opacity: 0;
-				transition: opacity 0.1s ease;
+				transition: opacity 0.2s ease;
 			}
 			.card.focus .ep-watched-layer,
 			.card:hover .ep-watched-layer {
 				opacity: 1;
-				transition-delay: 0.3s;
+				transition-delay: 0.4s;
 			}
 			.ep-watched-body {
 				font-size: 0.9em;
